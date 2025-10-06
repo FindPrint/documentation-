@@ -1,0 +1,7 @@
+Résumé robustesse synthétique:
+- Cas avec erreur < 2% : 137
+- Cas avec erreur < 5% : 245
+- Cas avec erreur < 10% : 297
+- Meilleur cas: mu=0.1, gamma=0.0, d0=3.2, beta=0.6
+  alpha_mean=1.023, amplitude_obs=1.011,
+  amplitude_theo=1.011, erreur_relative=0.000

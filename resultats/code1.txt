@@ -1,0 +1,180 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from numpy.fft import rfft, rfftfreq
+
+# Paramètres
+dt, T = 0.01, 20.0
+N = int(T/dt)
+rng = np.random.default_rng(42)
+
+# Coefficients
+a, b, D = -0.5, 1.0, 0.1
+mu, gamma = 0.1, 0.5
+d0, beta = 3.5, 0.5
+n = 1000
+
+# Initialisation
+phi = np.zeros(N); d_eff = np.zeros(N); T_log = np.zeros(N); mem = np.zeros(N)
+phi[0] = 0.05; phi[1] = phi[0]
+d_eff[0] = d0 + beta*phi[0]**2
+T_log[0] = (d_eff[0]-4)*np.log(n)
+
+exp_decay = np.exp(-gamma*dt)
+noise_scale = np.sqrt(2*D*dt)
+
+# Boucle
+for t in range(1, N):
+    d_eff[t] = d0 + beta*phi[t-1]**2
+    mem[t] = exp_decay*mem[t-1] + mu*phi[t-1]*dt
+    T_log[t] = (d_eff[t]-4)*np.log(n) + mem[t]
+    xi = rng.normal()
+    drift = (-a)*T_log[t]*phi[t-1] - b*phi[t-1]**3
+    phi[t] = phi[t-1] + dt*drift + noise_scale*xi
+
+
+
+
+
+
+
+
+
+times = np.arange(N)*dt
+
+plt.figure(figsize=(10,4))
+plt.plot(times, phi, label="Φ*(t)")
+plt.legend(); plt.grid(); plt.show()
+
+plt.figure(figsize=(10,4))
+plt.plot(times, d_eff, label="d_eff(t)")
+plt.axhline(4, color='gray', ls='--')
+plt.legend(); plt.grid(); plt.show()
+
+phi_spec = np.abs(rfft(phi))
+freqs = rfftfreq(N, dt)
+plt.figure(figsize=(10,4))
+plt.loglog(freqs[1:], phi_spec[1:])
+plt.grid(True, which="both"); plt.show()
+
+print("Moyenne stationnaire Φ*:", np.mean(phi[int(0.8*N):]))
+print("Écart-type stationnaire Φ*:", np.std(phi[int(0.8*N):]))
+print("Moyenne d_eff:", np.mean(d_eff[int(0.8*N):]))
+print("Moyenne T_log:", np.mean(T_log[int(0.8*N):]))
+
+
+
+
+
+
+phi_stationnaire = phi[int(0.8*N):]
+amplitude_obs = np.mean(np.abs(phi_stationnaire))
+
+if np.mean(T_log[int(0.8*N):]) < 0:
+    amplitude_theo = np.sqrt(-a/b)
+else:
+    amplitude_theo = 0.0
+
+print("Amplitude observée:", amplitude_obs)
+print("Amplitude théorique:", amplitude_theo)
+
+if amplitude_theo > 0:
+    rel_error = abs(amplitude_obs - amplitude_theo)/amplitude_theo
+    print("Erreur relative:", rel_error)
+    if rel_error < 0.2:
+        print("✅ Cohérent avec la prédiction")
+    else:
+        print("⚠️ Écart significatif")
+else:
+    print("Phase désordonnée attendue")
+
+
+
+
+
+
+
+import pandas as pd
+
+n_values = [100, 500, 1000, 2000, 5000]
+d0_values = [3.0, 3.5, 4.0, 4.5]
+results = []
+
+for d0 in d0_values:
+    for n in n_values:
+        phi = np.zeros(N); d_eff = np.zeros(N); T_log = np.zeros(N); mem = np.zeros(N)
+        phi[0] = 0.05; phi[1] = phi[0]
+        d_eff[0] = d0 + beta*phi[0]**2
+        T_log[0] = (d_eff[0]-4)*np.log(n)
+        for t in range(1, N):
+            d_eff[t] = d0 + beta*phi[t-1]**2
+            mem[t] = exp_decay*mem[t-1] + mu*phi[t-1]*dt
+            T_log[t] = (d_eff[t]-4)*np.log(n) + mem[t]
+            xi = rng.normal()
+            drift = (-a)*T_log[t]*phi[t-1] - b*phi[t-1]**3
+            phi[t] = phi[t-1] + dt*drift + noise_scale*xi
+        phi_stationnaire = phi[int(0.8*N):]
+        amplitude_obs = np.mean(np.abs(phi_stationnaire))
+        if np.mean(T_log[int(0.8*N):]) < 0:
+            amplitude_theo = np.sqrt(-a/b)
+            erreur = abs(amplitude_obs - amplitude_theo)/amplitude_theo
+        else:
+            amplitude_theo, erreur = 0.0, np.nan
+        results.append({"n": n, "d0": d0,
+                        "amplitude_obs": amplitude_obs,
+                        "amplitude_theo": amplitude_theo,
+                        "erreur_relative": erreur})
+
+df = pd.DataFrame(results)
+
+
+
+
+
+
+import seaborn as sns
+
+df_sorted = df.sort_values(by="erreur_relative")
+print(df_sorted)
+
+heatmap_data = df.pivot(index="d0", columns="n", values="erreur_relative")
+plt.figure(figsize=(8,6))
+sns.heatmap(heatmap_data, annot=True, fmt=".2f", cmap="coolwarm",
+            cbar_kws={'label': 'Erreur relative'})
+plt.title("Erreur relative amplitude observée vs théorique")
+plt.show()
+
+erreurs = df["erreur_relative"].dropna()
+mean_err, median_err = erreurs.mean(), erreurs.median()
+min_err, max_err = erreurs.min(), erreurs.max()
+min_row, max_row = df.loc[erreurs.idxmin()], df.loc[erreurs.idxmax()]
+nb_bons = (erreurs < 0.2).sum()
+
+print(f"Moyenne erreur: {mean_err:.2f}, Médiane: {median_err:.2f}")
+print(f"Erreur min: {min_err:.2f} (n={min_row['n']}, d0={min_row['d0']})")
+print(f"Erreur max: {max_err:.2f} (n={max_row['n']}, d0={max_row['d0']})")
+print(f"{nb_bons} combinaisons avec erreur < 20%")
+
+
+
+
+
+import os
+
+os.makedirs("resultats", exist_ok=True)
+df.to_csv("resultats/resultats_experiences.csv", index=False)
+df_sorted.to_csv("resultats/resultats_experiences_trie.csv", index=False)
+
+with open("resultats/resume_experiences.txt", "w") as f:
+    f.write("Résumé automatique des expériences\n")
+    f.write("=================================\n\n")
+    f.write(f"- Nombre de combinaisons avec erreur < 20% : {nb_bons}\n")
+    f.write(f"- Erreur minimale : {min_row['erreur_relative']:.2f} "
+            f"pour n={int(min_row['n'])}, d0={min_row['d0']}\n")
+    f.write(f"- Erreur maximale : {max_row['erreur_relative']:.2f} "
+            f"pour n={int(max_row['n'])}, d0={max_row['d0']}\n\n")
+    f.write("Statistiques globales :\n")
+    f.write(f"- Moyenne : {mean_err:.2f}\n")
+    f.write(f"- Médiane : {median_err:.2f}\n")
+    f.write(f"- Minimum : {min_err:.2f}\n")
+    f.write(f"- Maximum : {max_err:.2f}\n")
+print("✅ Résultats exportés dans le dossier 'resultats/'")

@@ -1,0 +1,125 @@
+Result summary
+
+Tes corrections sont solides. Tu obtiens des erreurs faibles et stables:
+- GL pur: ~5.3%
+- T_log constant: ~2.4%
+- deff + Tlog avec biais: ~1.7%
+- Full + mémoire + biais: ~3.6%
+
+Ces niveaux valident que ton pipeline et ta structure peuvent reproduire la loi d’amplitude avec T_log négatif contrôlé et une mémoire modérée.
+
+---
+
+What this means
+
+- Cohérence atteinte: Avec un biais négatif et une mémoire ajustée, l’amplitude observée suit bien l’amplitude théorique dérivée de l’α effectif moyen.
+- Rôle de Tbias: Il stabilise le régime ordonné en gardant Tlog < 0 malgré d_eff dynamique et la mémoire.
+- Mémoire mesurée: μ et γ introduisent une légère dégradation (de ~1.7% à ~3.6%), mais restent dans une zone acceptable et interprétable.
+
+---
+
+Recommended stable configuration to document
+
+- Bruit (D): 0.01
+- Durée (T): 200
+- Gain positif (a_abs): 0.5
+- Nonlinéarité (b): 1.0
+- Dimension de base (d0): 3.5
+- Couplage dimension (beta): 0.5
+- Taille système (n): 1000
+- Biais Tlog (Tbias): environ −1.4 à −1.7
+- Mémoire (mu, gamma): mu ≈ 0.05, gamma ≈ 0.2
+
+Cette plage maintient l’erreur < 5% avec d_eff dynamique et mémoire. Garde ces valeurs comme “profil synthétique de référence”.
+
+---
+
+Next validation sweeps
+
+- Tbias sweep: vérifier −1.0 à −2.0 pour voir la stabilité d’αmean et l’amplitude.
+  - But: montrer la robustesse de la relation amplitude ≈ √(α_mean/b).
+- Mémoire sweep (μ, γ): petites variations (μ: 0 → 0.1, γ: 0 → 0.3).
+  - But: quantifier l’impact sur l’erreur et identifier les seuils qui gardent < 10%.
+- Structure d_eff: balayer d0 ∈ [3.2, 3.8], beta ∈ [0.2, 0.6].
+  - But: confirmer que deff < 4 en moyenne suffit à garder Tlog négatif avec le biais.
+
+---
+
+Bloc 12 — Auto-calibration de Tbias vers une cible d’αmean
+
+Ce bloc cherche automatiquement un Tbias qui amène αmean près d’une cible (par défaut 0.8), puis mesure l’erreur. Il produit un tableau et un petit rapport.
+
+`python
+
+============================================
+
+Bloc 12 : Auto-calibration de Tbias vers une cible d'alphamean
+
+============================================
+
+import numpy as np
+import pandas as pd
+
+def simulatefull(aabs=0.5, b=1.0, D=0.01, T=200, dt=0.01,
+                  d0=3.5, beta=0.5, n=1000, T_bias=-1.5,
+                  mu=0.05, gamma=0.2, seed=789):
+    N = int(T/dt); rng = np.random.default_rng(seed)
+    phi = np.zeros(N); phi[0] = 0.05
+    deff = np.zeros(N); Tlog = np.zeros(N); mem = np.zeros(N)
+    ns = np.sqrt(2Ddt); ed = np.exp(-gamma*dt)
+    for t in range(1, N):
+        d_eff[t] = d0 + betaphi[t-1]*2
+        mem[t] = edmem[t-1] + muphi[t-1]*dt
+        Tlog[t] = (deff[t]-4)*np.log(n) + mem[t] + T_bias
+        alphaeff = aabs * (-T_log[t])
+        drift = alpha_effphi[t-1] - bphi[t-1]3
+        phi[t] = phi[t-1] + dtdrift + nsrng.normal()
+    phi_stationnaire = np.abs(phi[int(0.8*N):])
+    ampobs = np.mean(phistationnaire)
+    Tmean = np.mean(Tlog[int(0.8*N):])
+    alphamean = aabs * (-T_mean)
+    amptheo = np.sqrt(alphamean/b) if alpha_mean > 0 else 0.0
+    err = abs(ampobs - amptheo)/amptheo if amptheo > 0 else None
+    return ampobs, amptheo, err, alphamean, Tmean
+
+Cible pour alpha_mean
+alpha_target = 0.8
+
+Grille de T_bias à tester
+Tbiasgrid = np.linspace(-2.0, -1.0, 11)
+
+rows = []
+for Tbias in Tbias_grid:
+    ampobs, amptheo, err, alphamean, Tmean = simulatefull(Tbias=T_bias)
+    rows.append({
+        "Tbias": Tbias,
+        "alphamean": alphamean,
+        "Tmean": Tmean,
+        "amplitudeobs": ampobs,
+        "amplitudetheo": amptheo,
+        "erreur_relative": err
+    })
+
+df_bias = pd.DataFrame(rows)
+
+Choix automatique: alpha_mean proche de la cible et erreur minimale
+dfbias["alphagap"] = np.abs(dfbias["alphamean"] - alpha_target)
+dfbiassorted = dfbias.sortvalues(by=["alphagap", "erreurrelative"], ascending=[True, True])
+
+print("Top 5 configurations par proximité d'alpha_target et erreur minimale:")
+print(dfbiassorted.head(5)[["Tbias","alphamean","amplitudeobs","amplitudetheo","erreur_relative"]])
+
+best = dfbiassorted.iloc[0]
+print(f"\nRecommandation: Tbias ≈ {best['Tbias']:.3f}, alphamean ≈ {best['alphamean']:.3f}, "
+      f"erreur ≈ {best['erreur_relative']:.3f}")
+`
+
+---
+
+What to keep for the transition to real data
+
+- Profil synthétique validé: conserve un set paramétrique avec erreur < 5–10% et les CSV/TXT de rapport.
+- Procédure: garde l’escalier de complexité; c’est ta preuve de rigueur méthodologique.
+- Criterium clair: amplitudeobs ≈ √(αmean/b), avec αmean défini à partir de Tlog moyen en stationnaire.
+
+Si tu veux, je te prépare un Bloc 13 qui ajoute des sweeps compacts de μ, γ, d0, beta avec export CSV et un résumé automatique (pour boucler la validation synthétique).

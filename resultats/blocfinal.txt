@@ -1,0 +1,69 @@
+# ============================================
+# Bloc 15 : Rapport final synthétique
+# ============================================
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+
+# 1. Charger les résultats de robustesse
+df = pd.read_csv("resultats/robustesse_synthetique.csv")
+df = df.dropna(subset=["erreur_relative"])
+
+# 2. Statistiques globales
+nb_lt_2  = (df["erreur_relative"] < 0.02).sum()
+nb_lt_5  = (df["erreur_relative"] < 0.05).sum()
+nb_lt_10 = (df["erreur_relative"] < 0.10).sum()
+
+mean_err   = df["erreur_relative"].mean()
+median_err = df["erreur_relative"].median()
+min_err    = df["erreur_relative"].min()
+max_err    = df["erreur_relative"].max()
+
+best = df.nsmallest(1, "erreur_relative").iloc[0]
+
+print("Résumé global :")
+print(f"- Cas avec erreur < 2% : {nb_lt_2}")
+print(f"- Cas avec erreur < 5% : {nb_lt_5}")
+print(f"- Cas avec erreur < 10% : {nb_lt_10}")
+print(f"- Moyenne erreur : {mean_err:.4f}, Médiane : {median_err:.4f}")
+print(f"- Min erreur : {min_err:.4f}, Max erreur : {max_err:.4f}")
+print(f"- Meilleure combinaison : mu={best['mu']}, gamma={best['gamma']}, "
+      f"d0={best['d0']}, beta={best['beta']}, erreur={best['erreur_relative']:.6f}")
+
+# 3. Afficher les 5 meilleures combinaisons
+print("\nTop 5 combinaisons :")
+print(df.nsmallest(5, "erreur_relative")[["mu","gamma","d0","beta","alpha_mean",
+                                          "amplitude_obs","amplitude_theo","erreur_relative"]])
+
+# 4. Heatmap des erreurs relatives (mu=0.1, gamma=0.0)
+df_heat = df[(df.mu == 0.1) & (df.gamma == 0.0)]
+pivot = df_heat.pivot(index="d0", columns="beta", values="erreur_relative")
+
+plt.figure(figsize=(8,6))
+sns.heatmap(pivot, annot=True, fmt=".3f", cmap="viridis",
+            cbar_kws={'label': 'Erreur relative'})
+plt.title("Erreur relative en fonction de d0 et β (mu=0.1, gamma=0.0)")
+plt.xlabel("β")
+plt.ylabel("d0")
+plt.tight_layout()
+plt.show()
+
+# 5. Export résumé TXT
+os.makedirs("resultats", exist_ok=True)
+txt_path = "resultats/rapport_final_synthetique.txt"
+with open(txt_path, "w") as f:
+    f.write("Rapport final synthétique\n")
+    f.write("========================\n\n")
+    f.write(f"- Cas avec erreur < 2% : {nb_lt_2}\n")
+    f.write(f"- Cas avec erreur < 5% : {nb_lt_5}\n")
+    f.write(f"- Cas avec erreur < 10% : {nb_lt_10}\n\n")
+    f.write(f"- Moyenne erreur : {mean_err:.4f}\n")
+    f.write(f"- Médiane erreur : {median_err:.4f}\n")
+    f.write(f"- Min erreur : {min_err:.4f}\n")
+    f.write(f"- Max erreur : {max_err:.4f}\n\n")
+    f.write("Meilleure combinaison :\n")
+    f.write(f"mu={best['mu']}, gamma={best['gamma']}, d0={best['d0']}, beta={best['beta']}, "
+            f"alpha_mean={best['alpha_mean']:.3f}, erreur={best['erreur_relative']:.6f}\n")
+print(f"✅ Rapport exporté dans {txt_path}")

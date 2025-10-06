@@ -1,0 +1,14 @@
+Rapport final synthétique
+========================
+
+- Cas avec erreur < 2% : 137
+- Cas avec erreur < 5% : 245
+- Cas avec erreur < 10% : 297
+
+- Moyenne erreur : 0.0452
+- Médiane erreur : 0.0241
+- Min erreur : 0.0000
+- Max erreur : 0.5399
+
+Meilleure combinaison :
+mu=0.1, gamma=0.0, d0=3.2, beta=0.6, alpha_mean=1.023, erreur=0.000021

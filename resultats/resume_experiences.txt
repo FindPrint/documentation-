@@ -1,0 +1,12 @@
+Résumé automatique des expériences
+=================================
+
+- Nombre de combinaisons avec erreur < 20% : 0
+- Erreur minimale : 0.40 pour n=2000, d0=3.5
+- Erreur maximale : 0.84 pour n=5000, d0=3.0
+
+Statistiques globales :
+- Moyenne : 0.69
+- Médiane : 0.74
+- Minimum : 0.40
+- Maximum : 0.84

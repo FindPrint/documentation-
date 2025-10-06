@@ -1,0 +1,25 @@
+
+Résumé de la validation synthétique du modèle :
+
+1. Étapes de validation effectuées :
+   - Simulation Ginzburg–Landau pur (sans T_log, mémoire, ni d_eff)
+   - Ajout de T_log constant pour forcer un champ effectif stable
+   - Ajout de d_eff dynamique avec biais T_bias pour stabiliser T_log
+   - Ajout de mémoire : mem[t] = exp(-γ·dt)·mem[t-1] + μ·φ[t-1]·dt
+   - Balayage de robustesse sur mu, gamma, d0, beta
+   - Visualisation multi-cas pour comparer les trajectoires
+   - Rapport final exporté avec les meilleures configurations
+
+2. Équation complète utilisée :
+   - Drift : α_eff·φ - b·φ³ avec α_eff = a_abs·(−T_log)
+   - T_log = (d_eff − 4)·log(n) + mem + T_bias
+   - d_eff = d0 + beta·φ²
+   - mem[t] = exp(−γ·dt)·mem[t−1] + μ·φ[t−1]·dt
+
+3. Résultats obtenus :
+   - Erreurs relatives < 0.1% sur plusieurs combinaisons
+   - Robustesse confirmée pour mu ∈ [0.05, 0.10], gamma ≈ 0.0
+   - d0 ∈ [3.2, 3.8], beta ∈ [0.2, 0.6]
+   - T_bias ≈ −1.0 stabilise le régime ordonné
+
+Fichier généré automatiquement dans le cadre de la validation synthétique.

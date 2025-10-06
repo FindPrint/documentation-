@@ -1,0 +1,92 @@
+# ============================================
+# Bloc 8 : Simulation optimale (paramètres ajustés)
+# ============================================
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.fft import rfft, rfftfreq
+
+# Paramètres optimaux identifiés
+D = 0.1          # Intensité du bruit
+T = 20           # Durée totale
+mu = 0.1         # Couplage mémoire
+gamma = 0.5      # Poids mémoire
+
+# Paramètres du modèle
+N = 5000
+dt = T / N
+n = 2000
+d0 = 3.5
+beta = 0.5
+a, b = -0.5, 1.0
+
+exp_decay = np.exp(-gamma * dt)
+noise_scale = np.sqrt(2 * D * dt)
+rng = np.random.default_rng()
+
+# Initialisation
+phi = np.zeros(N)
+d_eff = np.zeros(N)
+T_log = np.zeros(N)
+mem = np.zeros(N)
+
+phi[0] = 0.05
+phi[1] = phi[0]
+
+# Simulation
+for t in range(1, N):
+    d_eff[t] = d0 + beta * phi[t-1]**2
+    mem[t] = exp_decay * mem[t-1] + mu * phi[t-1] * dt
+    T_log[t] = (d_eff[t] - 4) * np.log(n) + mem[t]
+    xi = rng.normal()
+    drift = (-a) * T_log[t] * phi[t-1] - b * phi[t-1]**3
+    phi[t] = phi[t-1] + dt * drift + noise_scale * xi
+
+# Partie stationnaire
+phi_stationnaire = phi[int(0.8*N):]
+amplitude_obs = np.mean(np.abs(phi_stationnaire))
+
+# Amplitude théorique
+if np.mean(T_log[int(0.8*N):]) < 0:
+    amplitude_theo = np.sqrt(-a/b)
+else:
+    amplitude_theo = 0.0
+
+# Erreur relative
+if amplitude_theo > 0:
+    erreur_relative = abs(amplitude_obs - amplitude_theo) / amplitude_theo
+else:
+    erreur_relative = np.nan
+
+# Tracés
+plt.style.use('seaborn-v0_8')
+fig, axs = plt.subplots(3, 1, figsize=(10, 10))
+
+# 1. Phi*(t)
+axs[0].plot(np.linspace(0, T, N), phi, color='blue')
+axs[0].set_title("Évolution de Φ*(t)")
+axs[0].set_xlabel("Temps")
+axs[0].set_ylabel("Φ*(t)")
+
+# 2. d_eff(t)
+axs[1].plot(np.linspace(0, T, N), d_eff, color='green')
+axs[1].axhline(4, color='gray', ls='--')
+axs[1].set_title("Dimension effective d_eff(t)")
+axs[1].set_xlabel("Temps")
+axs[1].set_ylabel("d_eff")
+
+# 3. Spectre FFT
+phi_fft = rfft(phi - np.mean(phi))
+freqs = rfftfreq(N, dt)
+axs[2].loglog(freqs[1:], np.abs(phi_fft[1:]), color='purple')
+axs[2].set_title("Spectre de Fourier de Φ*(t)")
+axs[2].set_xlabel("Fréquence")
+axs[2].set_ylabel("Amplitude")
+
+plt.tight_layout()
+plt.show()
+
+# Résultats
+print("Amplitude observée (stationnaire):", amplitude_obs)
+print("Amplitude théorique attendue:", amplitude_theo)
+print("Erreur relative:", erreur_relative)
