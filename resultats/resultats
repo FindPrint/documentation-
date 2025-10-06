@@ -1,1 +1,13 @@
-
+resultats/
+│
+├── rapport_final_synthetique.txt
+├── calibration_alpha_scale.txt
+├── rapport_final_reel.txt
+├── comparaison_alpha_methods.txt
+├── resume_synthetique.txt
+├── resume_reel.txt
+├── journal_calibration.txt
+│
+├── synthetique_multi_cases.png
+├── calibration_alpha_scale.png
+└── rapport_final_reel.png
