@@ -1,1 +1,17 @@
-numpy, pandas, matplotlib, scipy, jupyter
+# Core scientific stack
+numpy
+pandas
+scipy
+
+# Visualisation
+matplotlib
+seaborn
+
+# Jupyter environment
+jupyter
+notebook
+ipykernel
+
+# Optionnel mais utile pour data science
+tqdm          # barres de progression
+statsmodels   # analyses statistiques avancées
